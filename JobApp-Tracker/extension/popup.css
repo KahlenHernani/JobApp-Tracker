@@ -1,3 +1,5 @@
+select { appearance: auto; }
+
 [hidden] { display: none !important; }
 :root {
   --bg: #ffffff;

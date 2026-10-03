@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { api, getToken, setToken } from './api'
 import Login from './components/Login'
 import Board from './components/Board'
@@ -6,7 +6,8 @@ import ApplicationForm from './components/ApplicationForm'
 import DetailPanel from './components/DetailPanel'
 import ResumeModal from './components/ResumeModal'
 import Projects from './components/Projects'
-import { banner, btn, btnGhost, btnPrimary } from './ui'
+import { banner, btn, btnGhost, btnPrimary, field } from './ui'
+import InboxPanel from './components/InboxPanel'
 
 const TABS = [
   ['pipeline', 'Pipeline'],
@@ -22,6 +23,35 @@ export default function App() {
   const [adding, setAdding] = useState(false)
   const [resumeOpen, setResumeOpen] = useState(false)
   const [openId, setOpenId] = useState(null)
+
+
+  const [query, setQuery] = useState('')
+const [jobType, setJobType] = useState('')
+const [due, setDue] = useState('')
+
+const filtered = useMemo(() => {
+  const q = query.trim().toLowerCase()
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const week = new Date(today)
+  week.setDate(week.getDate() + 7)
+
+  return apps.filter((a) => {
+    if (q && ![a.company, a.position, a.location, a.notes].some((v) => (v || '').toLowerCase().includes(q))) {
+      return false
+    }
+    if (jobType && a.job_type !== jobType) return false
+    if (due) {
+      if (!a.deadline) return false
+      const d = new Date(`${a.deadline}T00:00:00`)
+      if (due === 'week' && !(d >= today && d <= week)) return false
+      if (due === 'missed' && !(d < today && a.status === 'saved')) return false
+    }
+    return true
+  })
+}, [apps, query, jobType, due])
+
+const filtering = Boolean(query || jobType || due)
 
   const logout = useCallback(() => {
     setToken(null)
@@ -126,6 +156,32 @@ export default function App() {
                 ))}
               </dl>
             )}
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+  <input
+    className={`${field} !w-72`}
+    type="search"
+    placeholder="Search company, role, location, notes"
+    value={query}
+    onChange={(e) => setQuery(e.target.value)}
+    aria-label="Search applications"
+  />
+  <select className={`${field} !w-auto`} value={jobType} onChange={(e) => setJobType(e.target.value)} aria-label="Job type">
+    <option value="">All types</option>
+    <option>Internship</option>
+    <option>Full-time</option>
+    <option>Part-time</option>
+    <option>Contract</option>
+  </select>
+  <select className={`${field} !w-auto`} value={due} onChange={(e) => setDue(e.target.value)} aria-label="Deadline">
+    <option value="">Any deadline</option>
+    <option value="week">Due in 7 days</option>
+    <option value="missed">Missed (still Saved)</option>
+  </select>
+  {filtering && (
+    <button className={btnGhost} onClick={() => { setQuery(''); setJobType(''); setDue('') }}>Clear</button>
+  )}
+  <span className="ml-auto font-mono text-xs text-mute">{filtered.length} of {apps.length}</span>
+</div>
           </header>
 
           {error && <p className={`${banner} mb-4`} role="alert">{error}</p>}
@@ -137,7 +193,8 @@ export default function App() {
             </p>
           )}
 
-          <Board apps={apps} onMove={moveTo} onOpen={setOpenId} />
+          <InboxPanel onChanged={load} />
+          <Board apps={filtered} onMove={moveTo} onOpen={setOpenId} />
         </>
       )}
 

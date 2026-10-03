@@ -1,10 +1,9 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
 
-from .models import Application, ApplicationEvent, Interview, Resume
+from .models import Application, ApplicationEvent, Interview, Project, Resume
 
 User = get_user_model()
-
 
 class EventSerializer(serializers.ModelSerializer):
     class Meta:
@@ -62,6 +61,7 @@ class ProjectSerializer(serializers.ModelSerializer):
         model = Project
         fields = ["id", "name", "tech", "bullets", "link", "created"]
         read_only_fields = ["created"]
+
 
 class ResumeSerializer(serializers.ModelSerializer):
     class Meta:

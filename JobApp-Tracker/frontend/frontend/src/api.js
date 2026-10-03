@@ -29,10 +29,42 @@ function firstError(data) {
 }
 
 export const api = {
+
+gmailStatus: () => request('/gmail/status/'),
+gmailConnect: () => request('/gmail/connect/'),
+gmailSync: () => request('/gmail/sync/', { method: 'POST' }),
+gmailSuggestions: () => request('/gmail/suggestions/'),
+gmailResolve: (id, action) => request(`/gmail/suggestions/${id}/`, { method: 'POST', body: { action } }),
+gmailDisconnect: () => request('/gmail/disconnect/', { method: 'POST' }),
+
+
   listProjects: () => request('/projects/'),
   createProject: (body) => request('/projects/', { method: 'POST', body }),
   updateProject: (id, body) => request(`/projects/${id}/`, { method: 'PATCH', body }),
   deleteProject: (id) => request(`/projects/${id}/`, { method: 'DELETE' }),
+
+  listResumes: () => request('/resumes/'),
+  createResume: (body) => request('/resumes/', { method: 'POST', body }),
+  updateResume: (id, body) => request(`/resumes/${id}/`, { method: 'PATCH', body }),
+  deleteResume: (id) => request(`/resumes/${id}/`, { method: 'DELETE' }),
+  uploadResume: async (file, name = '') => {
+    const form = new FormData()
+    form.append('file', file)
+    if (name) form.append('name', name)
+    const res = await fetch(`${BASE}/resumes/upload/`, {
+      method: 'POST',
+      headers: { Authorization: `Token ${getToken()}` },
+      body: form,
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      const err = new Error(firstError(data) || 'Upload failed.')
+      err.status = res.status
+      throw err
+    }
+    return data
+  },
+
   getProfile: () => request('/profile/'),
   saveProfile: (resume_text) => request('/profile/', { method: 'PUT', body: { resume_text } }),
   parseJob: (text) => request('/parse-job/', { method: 'POST', body: { text } }),
