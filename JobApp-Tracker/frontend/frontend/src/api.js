@@ -29,7 +29,10 @@ function firstError(data) {
 }
 
 export const api = {
-
+  listProjects: () => request('/projects/'),
+  createProject: (body) => request('/projects/', { method: 'POST', body }),
+  updateProject: (id, body) => request(`/projects/${id}/`, { method: 'PATCH', body }),
+  deleteProject: (id) => request(`/projects/${id}/`, { method: 'DELETE' }),
   getProfile: () => request('/profile/'),
   saveProfile: (resume_text) => request('/profile/', { method: 'PUT', body: { resume_text } }),
   parseJob: (text) => request('/parse-job/', { method: 'POST', body: { text } }),

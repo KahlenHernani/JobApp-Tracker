@@ -43,7 +43,7 @@ export default function Tailor({ app, onChanged }) {
   }
 
   return (
-    <section className="grid gap-3">
+    <section className="grid gap-3 border-t border-rule pt-5">
       <h3 className={sectionTitle}>Job description</h3>
       <textarea
         className={field}
@@ -63,9 +63,7 @@ export default function Tailor({ app, onChanged }) {
       {error && <p className={banner} role="alert">{error}</p>}
       {result && (
         <>
-          <p className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed dark:border-slate-800 dark:bg-slate-950">
-            {result}
-          </p>
+          <p className="whitespace-pre-wrap border border-ink bg-paper-2 p-4 text-sm leading-relaxed">{result}</p>
           <button className={`${btnGhost} justify-self-start`} onClick={copy}>
             {copied ? 'Copied' : 'Copy'}
           </button>

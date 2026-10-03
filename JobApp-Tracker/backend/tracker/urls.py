@@ -6,6 +6,10 @@ from . import views
 router = DefaultRouter()
 router.register("applications", views.ApplicationViewSet, basename="application")
 router.register("interviews", views.InterviewViewSet, basename="interview")
+router.register("projects", views.ProjectViewSet, basename="project")
+router.register("resumes", views.ResumeViewSet, basename="resume")
+# in urlpatterns:
+path("cover-letter/", views.cover_letter),
 
 urlpatterns = [
     path("auth/login/", views.LoginView.as_view()),

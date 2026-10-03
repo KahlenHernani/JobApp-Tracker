@@ -30,15 +30,16 @@ export default function Login({ onDone }) {
   }
 
   return (
-    <main className="grid min-h-screen lg:grid-cols-[minmax(380px,480px)_1fr]">
-      <div className="flex flex-col justify-center px-6 py-12 sm:px-12">
-        <p className="font-display text-sm font-extrabold tracking-tight">JobApp Tracker</p>
-        <form onSubmit={submit} className="mt-10 grid gap-4">
+    <main className="grid min-h-screen lg:grid-cols-[minmax(380px,540px)_1fr]">
+      <div className="flex flex-col justify-center px-6 py-12 sm:px-14">
+        <p className="kicker">JobApp Tracker</p>
+        <form onSubmit={submit} className="mt-8 grid gap-5">
           <div>
-            <h1 className="font-display text-2xl font-extrabold tracking-tight">
-              {mode === 'login' ? 'Log in' : 'Create your account'}
+            <h1 className="archive-title !text-[clamp(3rem,7vw,5rem)]">
+              {mode === 'login' ? 'Log in' : 'Sign up'}
+              <span>.</span>
             </h1>
-            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
+            <p className="mt-3 text-mute">
               {mode === 'login' ? 'Pick up where your search left off.' : 'Takes ten seconds. No email needed.'}
             </p>
           </div>
@@ -63,7 +64,7 @@ export default function Login({ onDone }) {
           </button>
           <button
             type="button"
-            className={btnGhost}
+            className={`${btnGhost} justify-self-start`}
             onClick={() => {
               setMode(mode === 'login' ? 'register' : 'login')
               setError('')
@@ -74,18 +75,24 @@ export default function Login({ onDone }) {
         </form>
       </div>
 
-      <aside className="hidden flex-col justify-end border-l border-slate-800 bg-slate-900 p-12 text-slate-100 lg:flex">
-        <h2 className="max-w-md font-display text-4xl font-extrabold leading-tight tracking-tight">
-          Every application, one pipeline.
+      <aside className="hidden flex-col justify-end border-l border-ink bg-[#0d1511] p-14 text-[#e9e3d3] lg:flex">
+        <h2 className="max-w-lg font-display text-6xl font-semibold leading-[0.95] tracking-[-0.03em]">
+          Every application,
+          <br />
+          <em className="font-normal text-[#ff6a3d]">one pipeline.</em>
         </h2>
-        <ol className="mt-10 grid max-w-md gap-4">
+        <ol className="mt-14 grid max-w-lg">
           {COLUMNS.map((c, i) => (
-            <li key={c.key} className="flex items-baseline gap-4 border-t border-slate-800 pt-4">
-              <span className="w-5 text-xs tabular-nums text-slate-500">{String(i + 1).padStart(2, '0')}</span>
-              <span className={`size-2 shrink-0 translate-y-px rounded-full ${c.accent}`} />
+            <li
+              key={c.key}
+              className="rise flex items-baseline gap-5 border-t border-[#e9e3d3]/25 py-4"
+              style={{ '--i': i + 2 }}
+            >
+              <span className="w-8 font-display text-2xl italic text-[#ff6a3d]">{String(i + 1).padStart(2, '0')}</span>
+              <span className="size-2.5 shrink-0" style={{ background: c.color }} />
               <span>
-                <span className="block text-sm font-semibold">{c.label}</span>
-                <span className="block text-sm text-slate-400">{HINTS[c.key]}</span>
+                <span className="block font-display text-xl font-semibold">{c.label}</span>
+                <span className="block font-mono text-xs text-[#8d9a8f]">{HINTS[c.key]}</span>
               </span>
             </li>
           ))}

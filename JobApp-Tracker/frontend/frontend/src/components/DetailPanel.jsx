@@ -51,15 +51,16 @@ export default function DetailPanel({ app, onClose, onChanged, onMove }) {
 
   return (
     <>
-      <div className="fixed inset-0 z-10 bg-slate-950/30" onClick={onClose} aria-hidden="true" />
+      <div className="fixed inset-0 z-10 bg-[#0d1511]/50 backdrop-blur-[2px]" onClick={onClose} aria-hidden="true" />
       <aside
-        className="fixed inset-y-0 right-0 z-20 grid w-full max-w-md content-start gap-5 overflow-y-auto border-l border-slate-200 bg-white p-6 shadow-2xl motion-safe:animate-slide-in dark:border-slate-800 dark:bg-slate-900"
+        className="fixed inset-y-0 right-0 z-20 grid w-full max-w-md content-start gap-6 overflow-y-auto border-l border-ink bg-paper p-6 shadow-2xl motion-safe:animate-slide-in"
         aria-label={`${app.company} details`}
       >
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="font-display text-2xl font-extrabold tracking-tight">{app.company}</h2>
-            <p className="text-sm text-slate-600 dark:text-slate-400">{app.position}</p>
+            <p className="kicker">Application</p>
+            <h2 className="mt-1 font-display text-4xl font-semibold leading-none tracking-tight">{app.company}</h2>
+            <p className="mt-2 text-mute">{app.position}</p>
           </div>
           <button className={btnGhost} onClick={onClose}>Close</button>
         </div>
@@ -72,24 +73,24 @@ export default function DetailPanel({ app, onClose, onChanged, onMove }) {
         </label>
 
         {(facts.length > 0 || app.application_url) && (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 border-y border-ink py-4 text-sm">
             {facts.map(([k, v]) => (
               <div key={k} className="contents">
-                <dt className="text-slate-500 dark:text-slate-400">{k}</dt>
+                <dt className="font-mono text-[0.7rem] uppercase tracking-widest text-mute">{k}</dt>
                 <dd>{v}</dd>
               </div>
             ))}
             {app.application_url && (
               <>
-                <dt className="text-slate-500 dark:text-slate-400">Posting</dt>
+                <dt className="font-mono text-[0.7rem] uppercase tracking-widest text-mute">Posting</dt>
                 <dd>
                   <a
-                    className="font-medium text-blue-700 underline-offset-2 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:text-blue-400"
+                    className="underline decoration-hot underline-offset-4 transition hover:text-hot"
                     href={app.application_url}
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Open job posting
+                    Open job posting ↗
                   </a>
                 </dd>
               </>
@@ -99,37 +100,35 @@ export default function DetailPanel({ app, onClose, onChanged, onMove }) {
 
         <section className="grid gap-3">
           <h3 className={sectionTitle}>Timeline</h3>
-          <ol className="grid gap-3 border-l border-slate-200 dark:border-slate-800">
+          <ol className="grid gap-3 border-l border-ink">
             {timeline.map((ev) => (
               <li key={ev.id} className="relative pl-4 text-sm">
-                <span className="absolute -left-[3px] top-1.5 size-1.5 rounded-full bg-slate-400" />
-                <time className="mr-2 text-xs tabular-nums text-slate-500 dark:text-slate-400">{ev.date}</time>
+                <span className="absolute -left-[3px] top-2 size-1.5 bg-hot" />
+                <time className="mr-2 font-mono text-[0.7rem] tabular-nums text-mute">{ev.date}</time>
                 {ev.description}
               </li>
             ))}
           </ol>
         </section>
 
-        <section className="grid gap-3">
+        <section className="grid gap-3 border-t border-rule pt-5">
           <h3 className={sectionTitle}>Interviews</h3>
-          {app.interviews.length === 0 && (
-            <p className="text-sm text-slate-500 dark:text-slate-400">No interviews scheduled.</p>
-          )}
-          <ul className="grid gap-1">
+          {app.interviews.length === 0 && <p className="text-sm text-mute">No interviews scheduled.</p>}
+          <ul className="grid gap-1.5">
             {app.interviews.map((i) => (
               <li
                 key={i.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-slate-200 px-3 py-2 text-sm transition hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700"
+                className="flex items-center justify-between gap-3 border border-ink/30 px-3 py-2 text-sm transition hover:border-ink"
               >
                 <span>
                   <span className="font-medium">{i.interview_type}</span>
-                  <span className="text-slate-500 dark:text-slate-400">
-                    {' · '}
+                  <span className="font-mono text-xs text-mute">
+                    {' / '}
                     {new Date(i.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}
                   </span>
                 </span>
                 <button
-                  className="text-xs font-semibold text-rose-700 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-600 dark:text-rose-400"
+                  className="font-mono text-[0.7rem] font-medium text-danger underline underline-offset-4"
                   onClick={async () => {
                     await api.deleteInterview(i.id)
                     onChanged()
@@ -163,7 +162,7 @@ export default function DetailPanel({ app, onClose, onChanged, onMove }) {
 
         <Tailor app={app} onChanged={onChanged} />
 
-        <section className="grid gap-3">
+        <section className="grid gap-3 border-t border-rule pt-5">
           <h3 className={sectionTitle}>Notes</h3>
           <textarea className={field} rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={saveNotes} />
         </section>

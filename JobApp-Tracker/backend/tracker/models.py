@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from .models import Application, ApplicationEvent, Interview, Profile, Resume
 
 class Application(models.Model):
     class Status(models.TextChoices):
@@ -40,3 +41,17 @@ class ApplicationEvent(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     resume_text = models.TextField(blank=True)
+
+class Project(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="projects")
+    name = models.CharField(max_length=200)
+    tech = models.JSONField(default=list, blank=True)
+    bullets = models.JSONField(default=list, blank=True)
+    link = models.URLField(blank=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+class Resume(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="resumes")
+    name = models.CharField(max_length=100)
+    text = models.TextField(blank=True)
+    updated = models.DateTimeField(auto_now=True)

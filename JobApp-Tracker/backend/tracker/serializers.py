@@ -1,7 +1,7 @@
 from django.contrib.auth import get_user_model, password_validation
 from rest_framework import serializers
 
-from .models import Application, ApplicationEvent, Interview
+from .models import Application, ApplicationEvent, Interview, Resume
 
 User = get_user_model()
 
@@ -53,3 +53,19 @@ class RegisterSerializer(serializers.Serializer):
     def validate_password(self, value):
         password_validation.validate_password(value)
         return value
+
+class ProjectSerializer(serializers.ModelSerializer):
+    tech = serializers.ListField(child=serializers.CharField(max_length=60), max_length=20, required=False)
+    bullets = serializers.ListField(child=serializers.CharField(max_length=600), max_length=8, required=False)
+
+    class Meta:
+        model = Project
+        fields = ["id", "name", "tech", "bullets", "link", "created"]
+        read_only_fields = ["created"]
+
+class ResumeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resume
+        fields = ["id", "name", "text", "updated"]
+        read_only_fields = ["updated"]
+        extra_kwargs = {"text": {"max_length": 20000}}

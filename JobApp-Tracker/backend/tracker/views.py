@@ -9,11 +9,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from . import ai
-from .models import Application, ApplicationEvent, Interview, Profile
+from .models import Application, ApplicationEvent, Interview, Profile, Project, Resume
 from .serializers import (
     ApplicationSerializer,
     InterviewSerializer,
     RegisterSerializer,
+    ResumeSerializer,
 )
 
 User = get_user_model()
@@ -92,7 +93,8 @@ class ApplicationViewSet(viewsets.ModelViewSet):
         if task not in ai.TASKS:
             raise ValidationError({"detail": "Unknown task."})
         profile = Profile.objects.filter(user=request.user).first()
-        resume = profile.resume_text if profile else ""
+        resume_obj = Resume.objects.filter(user=request.user).order_by("-updated").first()
+        resume = resume_obj.text if resume_obj else ""
         if not resume.strip():
             raise ValidationError({"detail": "Add your resume first."})
         if not app.job_description.strip():
@@ -185,3 +187,42 @@ def parse_job(request):
     except (ai.AIError, ValueError):
         traceback.print_exc()  # shows the real cause in the runserver terminal
         return Response({"detail": "Couldn't read that posting. Try again in a minute."}, status=502)
+
+class ProjectViewSet(viewsets.ModelViewSet):
+    serializer_class = ProjectSerializer
+
+    def get_queryset(self):
+        return Project.objects.filter(user=self.request.user).order_by("-id")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+class ResumeViewSet(viewsets.ModelViewSet):
+    serializer_class = ResumeSerializer
+
+    def get_queryset(self):
+        return Resume.objects.filter(user=self.request.user).order_by("name")
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+
+@api_view(["POST"])
+def cover_letter(request):
+    try:
+        resume = Resume.objects.filter(user=request.user, pk=int(request.data.get("resume_id"))).first()
+    except (TypeError, ValueError):
+        resume = None
+    if not resume or not resume.text.strip():
+        raise ValidationError({"detail": "Pick a resume that has text in it."})
+    jd = str(request.data.get("job_description") or "").strip()
+    if len(jd) < 50:
+        raise ValidationError({"detail": "Not enough job description text."})
+    company = str(request.data.get("company") or "")[:200]
+    position = str(request.data.get("position") or "")[:200]
+    try:
+        letter = ai.cover_letter(company, position, jd[:20000], resume.text)
+    except ai.AIError:
+        traceback.print_exc()
+        return Response({"detail": "The AI is busy or your quota ran out. Try again in a minute."}, status=502)
+    return Response({"letter": letter})

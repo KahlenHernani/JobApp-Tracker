@@ -1,7 +1,7 @@
 export const COLUMNS = [
-  { key: 'saved', label: 'Saved', accent: 'bg-slate-400' },
-  { key: 'applied', label: 'Applied', accent: 'bg-blue-600' },
-  { key: 'interview', label: 'Interview', accent: 'bg-amber-500' },
-  { key: 'offer', label: 'Offer', accent: 'bg-emerald-600' },
-  { key: 'rejected', label: 'Rejected', accent: 'bg-rose-500' },
+  { key: 'saved', label: 'Saved', color: '#8d9a8f' },
+  { key: 'applied', label: 'Applied', color: '#4f8f73' },
+  { key: 'interview', label: 'Interview', color: '#e0a21a' },
+  { key: 'offer', label: 'Offer', color: '#1f8a5b' },
+  { key: 'rejected', label: 'Rejected', color: '#b4332a' },
 ]

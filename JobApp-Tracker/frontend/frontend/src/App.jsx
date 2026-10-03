@@ -5,10 +5,17 @@ import Board from './components/Board'
 import ApplicationForm from './components/ApplicationForm'
 import DetailPanel from './components/DetailPanel'
 import ResumeModal from './components/ResumeModal'
+import Projects from './components/Projects'
 import { banner, btn, btnGhost, btnPrimary } from './ui'
+
+const TABS = [
+  ['pipeline', 'Pipeline'],
+  ['projects', 'Projects'],
+]
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()))
+  const [view, setView] = useState('pipeline')
   const [apps, setApps] = useState([])
   const [stats, setStats] = useState(null)
   const [error, setError] = useState('')
@@ -60,44 +67,79 @@ export default function App() {
     ['Interviewing', stats.by_status.interview || 0],
     ['Offers', stats.by_status.offer || 0],
     ['Interview rate', `${stats.interview_rate}%`],
-    ['Upcoming interviews', stats.upcoming_interviews],
+    ['Upcoming', stats.upcoming_interviews],
   ]
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 pb-12 pt-6 sm:px-8">
-      <header className="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-200 pb-5 dark:border-slate-800">
-        <div>
-          <h1 className="font-display text-3xl font-extrabold tracking-tight">Applications</h1>
-          {figures && (
-            <dl className="mt-3 flex flex-wrap gap-x-8 gap-y-2">
-              {figures.map(([name, value]) => (
-                <div key={name}>
-                  <dt className="text-xs text-slate-500 dark:text-slate-400">{name}</dt>
-                  <dd className="font-display text-2xl font-extrabold tabular-nums">{value}</dd>
-                </div>
-              ))}
-            </dl>
+    <div className="mx-auto max-w-[1600px] px-4 pb-20 pt-6 sm:px-10">
+      <nav className="mb-12 flex flex-wrap items-center gap-x-8 gap-y-2 border-b border-ink pb-3" aria-label="Sections">
+        <span className="kicker">JobApp Tracker</span>
+        {TABS.map(([key, name], i) => (
+          <button
+            key={key}
+            onClick={() => setView(key)}
+            aria-current={view === key ? 'page' : undefined}
+            className={`font-display text-lg font-semibold tracking-tight transition ${
+              view === key
+                ? 'text-ink underline decoration-hot decoration-2 underline-offset-8'
+                : 'text-mute hover:text-ink'
+            }`}
+          >
+            <span className="mr-2 font-mono text-[0.65rem] font-medium text-hot">{`0${i + 1}`}</span>
+            {name}
+          </button>
+        ))}
+        <button className={`${btnGhost} ml-auto`} onClick={logout}>Log out</button>
+      </nav>
+
+      {view === 'projects' ? (
+        <Projects />
+      ) : (
+        <>
+          <header className="mb-10 grid gap-8">
+            <div className="archive-head !mb-0">
+              <div>
+                <p className="kicker">Your search, in motion</p>
+                <h1 className="archive-title">
+                  Pipeline<span>.{String(stats?.total ?? 0).padStart(2, '0')}</span>
+                </h1>
+              </div>
+              <div className="flex gap-2">
+                <button className={btnPrimary} onClick={() => setAdding(true)}>Add application +</button>
+                <button className={btn} onClick={() => setResumeOpen(true)}>Resume</button>
+              </div>
+            </div>
+
+            {figures && (
+              <dl className="flex flex-wrap border-y border-ink">
+                {figures.map(([name, value], i) => (
+                  <div
+                    key={name}
+                    className="rise min-w-[9rem] flex-1 border-l border-rule py-4 pl-5 pr-4 first:border-l-0 first:pl-0"
+                    style={{ '--i': i }}
+                  >
+                    <dt className="kicker !text-mute">{name}</dt>
+                    <dd className="mt-1 font-display text-5xl font-semibold tabular-nums leading-none tracking-tight">
+                      {value}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+          </header>
+
+          {error && <p className={`${banner} mb-4`} role="alert">{error}</p>}
+
+          {apps.length === 0 && (
+            <p className="mb-8 max-w-lg font-display text-2xl italic leading-snug">
+              Nothing tracked yet. Add the first job you are interested in, then drag it across the board as it
+              progresses.
+            </p>
           )}
-        </div>
-        <div className="flex gap-2">
-          <button className={btnPrimary} onClick={() => setAdding(true)}>Add application</button>
-          <button className={btn} onClick={() => setResumeOpen(true)}>Resume</button>
-          <button className={btnGhost} onClick={logout}>Log out</button>
-        </div>
-      </header>
 
-      {error && <p className={`${banner} mb-4`} role="alert">{error}</p>}
-
-      {apps.length === 0 && (
-        <div className="mb-6 max-w-lg">
-          <p className="font-display text-lg font-bold">Nothing tracked yet.</p>
-          <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
-            Add the first job you are interested in, then drag it across the board as it progresses.
-          </p>
-        </div>
+          <Board apps={apps} onMove={moveTo} onOpen={setOpenId} />
+        </>
       )}
-
-      <Board apps={apps} onMove={moveTo} onOpen={setOpenId} />
 
       {adding && (
         <ApplicationForm
