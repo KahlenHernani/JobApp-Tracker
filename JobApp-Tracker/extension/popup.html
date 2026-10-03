@@ -1,17 +1,37 @@
 <!doctype html>
-<html>
-  <body style="width:280px;font:14px system-ui;padding:12px">
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>JobApp Tracker</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <div class="logo">J</div>
+      <div>
+        <h1>JobApp Tracker</h1>
+        <p class="sub">Save jobs while you browse</p>
+      </div>
+    </header>
+
     <form id="login-form" hidden>
-      <p><strong>Log in to JobApp Tracker</strong></p>
-      <input id="u" placeholder="Username" required style="width:100%;margin-bottom:6px" />
-      <input id="p" type="password" placeholder="Password" required style="width:100%;margin-bottom:6px" />
-      <button>Log in</button>
+      <label>Username <input id="u" autocomplete="username" required /></label>
+      <label>Password <input id="p" type="password" autocomplete="current-password" required /></label>
+      <button class="btn primary" type="submit">Log in</button>
     </form>
-    <div id="save" hidden>
-      <button id="save-btn" style="width:100%;padding:8px">Save this job</button>
-      <button id="logout" style="margin-top:8px">Log out</button>
-    </div>
-    <p id="status" role="status"></p>
+
+    <section id="save" hidden>
+      <button id="save-btn" class="btn primary big">Save this job</button>
+      <p class="hint">Open a job posting, wait for it to load, then click the button.</p>
+      <div class="links">
+        <button id="open-tracker" class="link" type="button">Open tracker</button>
+        <button id="logout" class="link" type="button">Log out</button>
+      </div>
+    </section>
+
+    <div id="status" class="status" role="status" hidden></div>
+
     <script src="popup.js"></script>
   </body>
 </html>

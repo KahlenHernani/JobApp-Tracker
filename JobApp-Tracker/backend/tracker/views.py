@@ -3,19 +3,13 @@ from django.db.models import Count, Q
 from django.utils import timezone
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.authtoken.models import Token
-from rest_framework.decorators import api_view
+from rest_framework.decorators import action, api_view
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-import anthropic
-from rest_framework.decorators import action, api_view
-from rest_framework.exceptions import ValidationError
-
 from . import ai
 from .models import Application, ApplicationEvent, Interview, Profile
-
-
-from .models import Application, ApplicationEvent, Interview
 from .serializers import (
     ApplicationSerializer,
     InterviewSerializer,
@@ -78,6 +72,18 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             .order_by("-date_saved", "-id")
         )
 
+    def perform_create(self, serializer):
+        app = serializer.save(user=self.request.user)
+        log_event(app, app.status, "Saved to tracker")
+
+    def perform_update(self, serializer):
+        old_status = serializer.instance.status
+        app = serializer.save()
+        if app.status != old_status:
+            if app.status == Application.Status.APPLIED and not app.date_applied:
+                app.date_applied = timezone.localdate()
+                app.save(update_fields=["date_applied"])
+            log_event(app, app.status, f"Moved to {app.get_status_display()}")
 
     @action(detail=True, methods=["post"])
     def tailor(self, request, pk=None):
@@ -93,41 +99,12 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             raise ValidationError({"detail": "Add the job description first."})
         try:
             result = ai.tailor(task, app, resume)
-        except anthropic.APIError:
-            return Response({"detail": "The AI service failed. Try again."}, status=502)
+        except ai.AIError:
+            return Response(
+                {"detail": "The AI is busy or your free quota ran out. Try again in a minute."},
+                status=502,
+            )
         return Response({"result": result})
-
-    @api_view(["GET", "PUT"])
-    def profile(request):
-        p, _ = Profile.objects.get_or_create(user=request.user)
-        if request.method == "PUT":
-            p.resume_text = str(request.data.get("resume_text", ""))[:20000]
-            p.save()
-        return Response({"resume_text": p.resume_text})
-
-
-    @api_view(["POST"])
-    def parse_job(request):
-        text = str(request.data.get("text") or "").strip()
-        if len(text) < 50:
-            return Response({"detail": "Not enough text to parse."}, status=400)
-        try:
-            return Response(ai.parse_job(text[:20000]))
-        except (anthropic.APIError, ValueError):
-            return Response({"detail": "Couldn't read that posting."}, status=502)
-
-    def perform_create(self, serializer):
-        app = serializer.save(user=self.request.user)
-        log_event(app, app.status, "Saved to tracker")
-
-    def perform_update(self, serializer):
-        old_status = serializer.instance.status
-        app = serializer.save()
-        if app.status != old_status:
-            if app.status == Application.Status.APPLIED and not app.date_applied:
-                app.date_applied = timezone.localdate()
-                app.save(update_fields=["date_applied"])
-            log_event(app, app.status, f"Moved to {app.get_status_display()}")
 
 
 class InterviewViewSet(
@@ -184,3 +161,27 @@ def stats(request):
             "upcoming_interviews": upcoming,
         }
     )
+
+
+@api_view(["GET", "PUT"])
+def profile(request):
+    p, _ = Profile.objects.get_or_create(user=request.user)
+    if request.method == "PUT":
+        p.resume_text = str(request.data.get("resume_text", ""))[:20000]
+        p.save()
+    return Response({"resume_text": p.resume_text})
+
+
+import traceback  # add to the imports at the top
+
+
+@api_view(["POST"])
+def parse_job(request):
+    text = str(request.data.get("text") or "").strip()
+    if len(text) < 50:
+        return Response({"detail": "Not enough text to parse."}, status=400)
+    try:
+        return Response(ai.parse_job(text[:20000]))
+    except (ai.AIError, ValueError):
+        traceback.print_exc()  # shows the real cause in the runserver terminal
+        return Response({"detail": "Couldn't read that posting. Try again in a minute."}, status=502)

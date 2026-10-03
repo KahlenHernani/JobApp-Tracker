@@ -8,7 +8,6 @@ class Application(models.Model):
         INTERVIEW = "interview"
         OFFER = "offer"
         REJECTED = "rejected"
-        job_description = models.TextField(blank=True)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications")
     company = models.CharField(max_length=200)
@@ -22,6 +21,7 @@ class Application(models.Model):
     date_applied = models.DateField(null=True, blank=True)
     deadline = models.DateField(null=True, blank=True)
     notes = models.TextField(blank=True)
+    job_description = models.TextField(blank=True)
 
 class Interview(models.Model):
     application = models.ForeignKey(Application, on_delete=models.CASCADE, related_name="interviews")

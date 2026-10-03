@@ -36,7 +36,7 @@ class ApplicationSerializer(serializers.ModelSerializer):
         fields = [
             "id", "company", "position", "location", "job_type", "salary",
             "application_url", "status", "date_saved", "date_applied",
-            "deadline", "notes", "events", "interviews",
+            "deadline", "notes", "job_description", "events", "interviews",
         ]
         read_only_fields = ["date_saved"]
 

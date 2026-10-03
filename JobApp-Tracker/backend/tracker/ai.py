@@ -1,24 +1,46 @@
 import json
 import os
 
-import anthropic
+from google import genai
+from google.genai import errors, types
+import time
 
-MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5-5")
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.8-flash")
+FALLBACK = os.environ.get("GEMINI_FALLBACK_MODEL", "gemini-3.8-flash")
 _client = None
 
 
-def _ask(system, user, max_tokens):
-    global _client
-    if _client is None:
-        _client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY from the environment
-    msg = _client.messages.create(
-        model=MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-    )
-    return "".join(b.text for b in msg.content if b.type == "text").strip()
+class AIError(Exception):
+    pass
 
+
+def _ask(system, user, max_tokens, json_mode=False):
+    global _client
+    try:
+        if _client is None:
+            _client = genai.Client()  # reads GEMINI_API_KEY from the environment
+        config = types.GenerateContentConfig(
+            system_instruction=system,
+            max_output_tokens=max_tokens,
+            **({"response_mime_type": "application/json"} if json_mode else {}),
+        )
+        last = None
+        for model in dict.fromkeys([MODEL, FALLBACK]):  # primary first, then fallback
+            for attempt in range(3):
+                try:
+                    resp = _client.models.generate_content(model=model, contents=user, config=config)
+                    return (resp.text or "").strip()
+                except errors.ServerError as e:  # 5xx: overloaded, wait and retry
+                    last = e
+                    time.sleep(2 ** attempt)
+                except errors.ClientError as e:
+                    if e.code in (404, 429):  # model gone or quota hit: try the next model
+                        last = e
+                        break
+                    raise
+        raise last
+    except (errors.APIError, ValueError) as e:
+        raise AIError(str(e)) from e
 
 TAILOR_SYSTEM = (
     "You are a career coach helping a candidate tailor a job application. "
@@ -52,7 +74,7 @@ def tailor(task, app, resume):
         f"<resume>\n{resume}\n</resume>\n\n"
         f"Task: {TASKS[task]}"
     )
-    return _ask(TAILOR_SYSTEM, user, max_tokens=1500)
+    return _ask(TAILOR_SYSTEM, user, max_tokens=4000)
 
 
 PARSE_SYSTEM = (
@@ -68,9 +90,11 @@ LIMITS = {"company": 200, "position": 200, "location": 200, "job_type": 50, "sal
 
 
 def parse_job(text):
-    raw = _ask(PARSE_SYSTEM, f"<page>\n{text}\n</page>", max_tokens=3000)
+    raw = _ask(PARSE_SYSTEM, f"<page>\n{text}\n</page>", max_tokens=8000, json_mode=True)
     raw = raw.removeprefix("```json").removeprefix("```").removesuffix("```").strip()
-    data = json.loads(raw)  # raises ValueError if the model returned junk
+    data = json.loads(raw)
+    if isinstance(data, list):  # some models wrap the object in a list
+        data = data[0] if data else {}
     keys = ["company", "position", "location", "job_type", "salary", "job_description"]
     out = {k: str(data.get(k) or "").strip() for k in keys}
     for k, n in LIMITS.items():

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { api } from '../api'
+import { banner, btn, btnGhost, field, sectionTitle } from '../ui'
 
 const TASKS = [
   { key: 'cover_letter_opening', label: 'Cover letter opening' },
@@ -11,6 +12,7 @@ export default function Tailor({ app, onChanged }) {
   const [jd, setJd] = useState(app.job_description)
   const [busy, setBusy] = useState(null)
   const [result, setResult] = useState('')
+  const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
 
   async function saveJd() {
@@ -34,30 +36,41 @@ export default function Tailor({ app, onChanged }) {
     }
   }
 
+  async function copy() {
+    await navigator.clipboard.writeText(result)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
   return (
-    <>
-      <h3>Job description</h3>
+    <section className="grid gap-3">
+      <h3 className={sectionTitle}>Job description</h3>
       <textarea
+        className={field}
         rows={5}
         value={jd}
         onChange={(e) => setJd(e.target.value)}
         onBlur={() => saveJd().catch((e) => setError(e.message))}
         placeholder="Paste the posting here to unlock tailoring"
       />
-      <div className="row wrap">
+      <div className="flex flex-wrap gap-2">
         {TASKS.map((t) => (
-          <button key={t.key} className="btn" disabled={busy !== null || !jd.trim()} onClick={() => run(t.key)}>
-            {busy === t.key ? 'Working…' : t.label}
+          <button key={t.key} className={btn} disabled={busy !== null || !jd.trim()} onClick={() => run(t.key)}>
+            <span className={busy === t.key ? 'animate-pulse' : ''}>{busy === t.key ? 'Working...' : t.label}</span>
           </button>
         ))}
       </div>
-      {error && <p className="banner" role="alert">{error}</p>}
+      {error && <p className={banner} role="alert">{error}</p>}
       {result && (
         <>
-          <p className="result">{result}</p>
-          <button className="btn ghost" onClick={() => navigator.clipboard.writeText(result)}>Copy</button>
+          <p className="whitespace-pre-wrap rounded-md border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed dark:border-slate-800 dark:bg-slate-950">
+            {result}
+          </p>
+          <button className={`${btnGhost} justify-self-start`} onClick={copy}>
+            {copied ? 'Copied' : 'Copy'}
+          </button>
         </>
       )}
-    </>
+    </section>
   )
 }
