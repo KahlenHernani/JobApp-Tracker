@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { api } from '../api'
 import { COLUMNS } from '../constants'
+import Tailor from './Tailor'
 
 export default function DetailPanel({ app, onClose, onChanged, onMove }) {
   const [notes, setNotes] = useState(app.notes)
@@ -102,6 +103,8 @@ export default function DetailPanel({ app, onClose, onChanged, onMove }) {
         />
         <button className="btn">Add</button>
       </form>
+      
+      <Tailor app={app} onChanged={onChanged} />
 
       <h3>Notes</h3>
       <textarea rows={5} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={saveNotes} />

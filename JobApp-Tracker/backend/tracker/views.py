@@ -7,6 +7,14 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+import anthropic
+from rest_framework.decorators import action, api_view
+from rest_framework.exceptions import ValidationError
+
+from . import ai
+from .models import Application, ApplicationEvent, Interview, Profile
+
+
 from .models import Application, ApplicationEvent, Interview
 from .serializers import (
     ApplicationSerializer,
@@ -69,6 +77,44 @@ class ApplicationViewSet(viewsets.ModelViewSet):
             .prefetch_related("events", "interviews")
             .order_by("-date_saved", "-id")
         )
+
+
+    @action(detail=True, methods=["post"])
+    def tailor(self, request, pk=None):
+        app = self.get_object()  # scoped to the current user by get_queryset
+        task = request.data.get("task")
+        if task not in ai.TASKS:
+            raise ValidationError({"detail": "Unknown task."})
+        profile = Profile.objects.filter(user=request.user).first()
+        resume = profile.resume_text if profile else ""
+        if not resume.strip():
+            raise ValidationError({"detail": "Add your resume first."})
+        if not app.job_description.strip():
+            raise ValidationError({"detail": "Add the job description first."})
+        try:
+            result = ai.tailor(task, app, resume)
+        except anthropic.APIError:
+            return Response({"detail": "The AI service failed. Try again."}, status=502)
+        return Response({"result": result})
+
+    @api_view(["GET", "PUT"])
+    def profile(request):
+        p, _ = Profile.objects.get_or_create(user=request.user)
+        if request.method == "PUT":
+            p.resume_text = str(request.data.get("resume_text", ""))[:20000]
+            p.save()
+        return Response({"resume_text": p.resume_text})
+
+
+    @api_view(["POST"])
+    def parse_job(request):
+        text = str(request.data.get("text") or "").strip()
+        if len(text) < 50:
+            return Response({"detail": "Not enough text to parse."}, status=400)
+        try:
+            return Response(ai.parse_job(text[:20000]))
+        except (anthropic.APIError, ValueError):
+            return Response({"detail": "Couldn't read that posting."}, status=502)
 
     def perform_create(self, serializer):
         app = serializer.save(user=self.request.user)

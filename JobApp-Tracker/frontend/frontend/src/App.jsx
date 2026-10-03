@@ -4,6 +4,7 @@ import Login from './components/Login'
 import Board from './components/Board'
 import ApplicationForm from './components/ApplicationForm'
 import DetailPanel from './components/DetailPanel'
+import ResumeModal from './components/ResumeModal'
 
 export default function App() {
   const [authed, setAuthed] = useState(Boolean(getToken()))
@@ -12,7 +13,10 @@ export default function App() {
   const [error, setError] = useState('')
   const [adding, setAdding] = useState(false)
   const [openId, setOpenId] = useState(null)
+  const [resumeOpen, setResumeOpen] = useState(false)
 
+
+  
   const logout = useCallback(() => {
     setToken(null)
     setAuthed(false)
@@ -73,6 +77,9 @@ export default function App() {
           <button className="btn ghost" onClick={logout}>
             Log out
           </button>
+          <button className="btn ghost" onClick={() => setResumeOpen(true)}>
+            Resume
+          </button>
         </div>
       </header>
 
@@ -98,6 +105,7 @@ export default function App() {
 
       {open && (
         <DetailPanel
+          key={open.id}
           app={open}
           onClose={() => setOpenId(null)}
           onChanged={load}

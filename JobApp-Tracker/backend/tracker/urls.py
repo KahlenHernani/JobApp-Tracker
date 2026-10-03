@@ -12,4 +12,6 @@ urlpatterns = [
     path("auth/register/", views.RegisterView.as_view()),
     path("stats/", views.stats),
     path("", include(router.urls)),
+    path("profile/", views.profile),
+    path("parse-job/", views.parse_job),
 ]

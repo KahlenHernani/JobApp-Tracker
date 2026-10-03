@@ -63,3 +63,6 @@ input, select, textarea { background: var(--bg); border: 1px solid var(--line); 
   .board { grid-template-columns: repeat(5, 240px); }
   .grid { grid-template-columns: 1fr; }
 }
+
+.row.wrap { flex-wrap: wrap; justify-content: flex-start; }
+.result { white-space: pre-wrap; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; }

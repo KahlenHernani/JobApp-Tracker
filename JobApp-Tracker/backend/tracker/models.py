@@ -8,6 +8,7 @@ class Application(models.Model):
         INTERVIEW = "interview"
         OFFER = "offer"
         REJECTED = "rejected"
+        job_description = models.TextField(blank=True)
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="applications")
     company = models.CharField(max_length=200)
@@ -35,3 +36,7 @@ class ApplicationEvent(models.Model):
     event_type = models.CharField(max_length=50)
     date = models.DateField()
     description = models.CharField(max_length=300, blank=True)
+
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    resume_text = models.TextField(blank=True)

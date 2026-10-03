@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+  <body style="width:280px;font:14px system-ui;padding:12px">
+    <form id="login-form" hidden>
+      <p><strong>Log in to JobApp Tracker</strong></p>
+      <input id="u" placeholder="Username" required style="width:100%;margin-bottom:6px" />
+      <input id="p" type="password" placeholder="Password" required style="width:100%;margin-bottom:6px" />
+      <button>Log in</button>
+    </form>
+    <div id="save" hidden>
+      <button id="save-btn" style="width:100%;padding:8px">Save this job</button>
+      <button id="logout" style="margin-top:8px">Log out</button>
+    </div>
+    <p id="status" role="status"></p>
+    <script src="popup.js"></script>
+  </body>
+</html>

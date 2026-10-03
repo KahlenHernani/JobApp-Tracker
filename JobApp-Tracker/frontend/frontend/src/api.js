@@ -29,6 +29,11 @@ function firstError(data) {
 }
 
 export const api = {
+
+  getProfile: () => request('/profile/'),
+  saveProfile: (resume_text) => request('/profile/', { method: 'PUT', body: { resume_text } }),
+  parseJob: (text) => request('/parse-job/', { method: 'POST', body: { text } }),
+  tailor: (id, task) => request(`/applications/${id}/tailor/`, { method: 'POST', body: { task } }),
   login: (username, password) =>
     request('/auth/login/', { method: 'POST', body: { username, password }, auth: false }),
   register: (username, password) =>
