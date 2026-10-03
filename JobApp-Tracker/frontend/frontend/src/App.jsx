@@ -1,122 +1,109 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useCallback, useEffect, useState } from 'react'
+import { api, getToken, setToken } from './api'
+import Login from './components/Login'
+import Board from './components/Board'
+import ApplicationForm from './components/ApplicationForm'
+import DetailPanel from './components/DetailPanel'
 
-function App() {
-  const [count, setCount] = useState(0)
+export default function App() {
+  const [authed, setAuthed] = useState(Boolean(getToken()))
+  const [apps, setApps] = useState([])
+  const [stats, setStats] = useState(null)
+  const [error, setError] = useState('')
+  const [adding, setAdding] = useState(false)
+  const [openId, setOpenId] = useState(null)
+
+  const logout = useCallback(() => {
+    setToken(null)
+    setAuthed(false)
+    setApps([])
+  }, [])
+
+  const load = useCallback(async () => {
+    try {
+      const [list, s] = await Promise.all([api.listApplications(), api.stats()])
+      setApps(list)
+      setStats(s)
+      setError('')
+    } catch (e) {
+      if (e.status === 401) logout()
+      else setError(e.message)
+    }
+  }, [logout])
+
+  useEffect(() => {
+    if (authed) load()
+  }, [authed, load])
+
+  async function moveTo(id, status) {
+    const current = apps.find((a) => a.id === id)
+    if (!current || current.status === status) return
+    // Optimistic update, then refresh from the server (which logs the timeline event).
+    setApps((prev) => prev.map((a) => (a.id === id ? { ...a, status } : a)))
+    try {
+      await api.updateApplication(id, { status })
+    } catch (e) {
+      setError(e.message)
+    }
+    load()
+  }
+
+  if (!authed) return <Login onDone={() => setAuthed(true)} />
+
+  const open = apps.find((a) => a.id === openId)
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    <div className="shell">
+      <header className="topbar">
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
+          <h1>Applications</h1>
+          {stats && (
+            <p className="summary">
+              {stats.total} tracked · {stats.by_status.interview || 0} interviewing ·{' '}
+              {stats.by_status.offer || 0} offers · interview rate {stats.interview_rate}%
+              {stats.upcoming_interviews > 0 &&
+                ` · ${stats.upcoming_interviews} upcoming interview${stats.upcoming_interviews > 1 ? 's' : ''}`}
+            </p>
+          )}
         </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+        <div className="topbar-actions">
+          <button className="btn primary" onClick={() => setAdding(true)}>
+            Add application
+          </button>
+          <button className="btn ghost" onClick={logout}>
+            Log out
+          </button>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </header>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      {error && <p className="banner" role="alert">{error}</p>}
+
+      {apps.length === 0 && (
+        <p className="empty">
+          No applications yet. Add the first job you are interested in and drag it across the board as it progresses.
+        </p>
+      )}
+
+      <Board apps={apps} onMove={moveTo} onOpen={setOpenId} />
+
+      {adding && (
+        <ApplicationForm
+          onClose={() => setAdding(false)}
+          onSaved={() => {
+            setAdding(false)
+            load()
+          }}
+        />
+      )}
+
+      {open && (
+        <DetailPanel
+          app={open}
+          onClose={() => setOpenId(null)}
+          onChanged={load}
+          onMove={moveTo}
+        />
+      )}
+    </div>
   )
 }
-
-export default App
