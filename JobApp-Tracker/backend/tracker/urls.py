@@ -10,6 +10,7 @@ router.register("projects", views.ProjectViewSet, basename="project")
 router.register("resumes", views.ResumeViewSet, basename="resume")
 
 urlpatterns = [
+    path("recommend-resume/", views.recommend_resume),
     path("gmail/connect/", views.gmail_connect),
     path("gmail/callback/", views.gmail_callback),
     path("gmail/status/", views.gmail_status),

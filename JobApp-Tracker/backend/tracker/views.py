@@ -387,3 +387,24 @@ def gmail_disconnect(request):
         gmail.revoke(link.refresh_token)
         link.delete()
     return Response({"ok": True})
+
+
+@api_view(["POST"])
+def recommend_resume(request):
+    text = str(request.data.get("text") or "").strip()
+    if len(text) < 50:
+        raise ValidationError({"detail": "Not enough page text."})
+    resumes = list(
+        Resume.objects.filter(user=request.user).exclude(text="").order_by("-updated")[:3]
+    )
+    if not resumes:
+        raise ValidationError({"detail": "Add a resume in the tracker first."})
+    try:
+        rankings = ai.rank_resumes(text[:15000], resumes)
+    except (ai.AIError, ValueError):
+        traceback.print_exc()
+        return Response({"detail": "Couldn't score your resumes. Try again in a minute."}, status=502)
+    names = {r.id: r.name for r in resumes}
+    for r in rankings:
+        r["name"] = names[r["id"]]
+    return Response({"rankings": rankings, "considered": len(resumes)})

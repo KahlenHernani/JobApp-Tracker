@@ -232,4 +232,59 @@ $('letter-btn').addEventListener('click', async () => {
   }
 })
 
+
+function showRankings(rankings, considered) {
+  const list = $('rank')
+  list.hidden = false
+  list.replaceChildren()
+  const pick = (r, btn) => {
+    $('resume').value = String(r.id)
+    chrome.storage.local.set({ resumeId: String(r.id) })
+    list.querySelectorAll('button').forEach((b) => b.classList.remove('chosen'))
+    btn.classList.add('chosen')
+  }
+  rankings.forEach((r, i) => {
+    const li = document.createElement('li')
+    const btn = document.createElement('button')
+    btn.type = 'button'
+    btn.className = 'rank-item'
+    const head = document.createElement('strong')
+    head.textContent = `${r.score}/100  ${r.name}`
+    const why = document.createElement('span')
+    why.textContent = r.reason
+    btn.append(head, why)
+    btn.addEventListener('click', () => pick(r, btn))
+    li.append(btn)
+    list.append(li)
+    if (i === 0) pick(r, btn) // auto-select the best match
+  })
+  const note = document.createElement('li')
+  note.className = 'hint'
+  note.textContent = `Compared your ${considered} most recently edited resume${considered > 1 ? 's' : ''}.`
+  list.append(note)
+}
+
+$('rank-btn').addEventListener('click', async () => {
+  const btn = $('rank-btn')
+  btn.disabled = true
+  try {
+    const { token } = await chrome.storage.local.get('token')
+    setStatus('loading', 'Reading page...')
+    const page = await readPage()
+    setStatus('loading', 'Scoring your resumes...', 'This can take up to a minute')
+    const { rankings, considered } = await post('/recommend-resume/', { text: page.text }, token, 90000)
+    if (!rankings.length) throw new Error('No scores came back. Try again.')
+    showRankings(rankings, considered)
+    setStatus('success', `Best match: ${rankings[0].name}`, 'Selected for your cover letter')
+  } catch (err) {
+    if (err.status === 401) {
+      await chrome.storage.local.remove('token')
+      render()
+    }
+    setStatus('error', 'Could not score resumes', err.message)
+  } finally {
+    btn.disabled = false
+  }
+})
+
 render()
