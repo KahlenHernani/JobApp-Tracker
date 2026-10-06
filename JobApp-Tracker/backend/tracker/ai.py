@@ -1,5 +1,6 @@
 import json
 import os
+from random import random
 
 from google import genai
 from google.genai import errors, types
@@ -25,16 +26,17 @@ def _ask(system, user, max_tokens, json_mode=False):
             **({"response_mime_type": "application/json"} if json_mode else {}),
         )
         last = None
-        for model in dict.fromkeys([MODEL, FALLBACK]):  # primary first, then fallback
-            for attempt in range(3):
+        for model in dict.fromkeys([MODEL, FALLBACK]):
+            for attempt in range(4):
                 try:
                     resp = _client.models.generate_content(model=model, contents=user, config=config)
                     return (resp.text or "").strip()
-                except errors.ServerError as e:  # 5xx: overloaded, wait and retry
+                except errors.ServerError as e:
                     last = e
-                    time.sleep(2 ** attempt)
+                    if attempt < 3:
+                        time.sleep(min(2 ** attempt * 2, 12) + random.random())
                 except errors.ClientError as e:
-                    if e.code in (404, 429):  # model gone or quota hit: try the next model
+                    if e.code in (404, 429):
                         last = e
                         break
                     raise
